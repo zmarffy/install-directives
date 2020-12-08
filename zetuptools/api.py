@@ -54,6 +54,7 @@ class Package():
                 tag = f"{sf}:{self.version}"
                 print(f"Building Docker image {tag}")
                 docker_client.images.build(path=f, tag=tag)
+                docker_client.images.get(tag).tag(sf)
 
     def __repr__(self):
         return f"Package(package={self._package})"
