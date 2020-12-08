@@ -48,10 +48,10 @@ class Package():
         docker_client = docker.from_env()
         docker_images_folder = os.path.abspath(
             resource_filename(self._package, docker_images_folder))
-        for f in os.listdir(docker_images_folder):
-            f = os.path.join(docker_images_folder, f)
+        for sf in os.listdir(docker_images_folder):
+            f = os.path.join(docker_images_folder, sf)
             if os.path.isdir(f) and "Dockerfile" in os.listdir(f):
-                tag = f"{self._package}:{self.version}"
+                tag = f"{sf}:{self.version}"
                 print(f"Building Docker image {tag}")
                 docker_client.images.build(path=f, tag=tag)
 
