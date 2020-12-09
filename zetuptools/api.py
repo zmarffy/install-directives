@@ -6,6 +6,8 @@ import docker
 import setuptools
 from pkg_resources import resource_filename
 
+import zmtools
+
 
 class ZetupTools():
 
@@ -35,14 +37,7 @@ class ZetupTools():
 class Package():
     def __init__(self, package):
         self._package = package
-        # Yes, this "version-grabbing" code is very specific; it may be changed later to accomidate more stuff
-        with open(os.path.join(self._package.replace(".", os.sep), "__init__.py"), encoding="utf8") as f:
-            try:
-                version = re.search(
-                    r'__version__ = "(.*?)"', f.read()).group(1)
-            except AttributeError:
-                version = None
-        self.version = version
+        self.version = zmtools.get_package_version(self._package)
 
     def build_docker_images(self, docker_images_folder="docker_images"):
         docker_client = docker.from_env()

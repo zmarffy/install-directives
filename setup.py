@@ -20,6 +20,7 @@ setuptools.setup(
     long_description_content_type='text/plain',
     install_requires=[
         'vermin',
-        'docker'
+        'docker',
+        'zmtools>=1.7.0'
     ],
 )
