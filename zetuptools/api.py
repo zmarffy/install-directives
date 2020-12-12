@@ -22,11 +22,12 @@ class SetuptoolsExtensions():
     """Extensions for setuptools setup.py file. Assumes you are in the source code folder
 
     Args:
+        name (str): The name of the pip package, what should get put into setuptools's name field
         author (str, optional): Author of the package. If None, uses git's username. Defaults to None.
         author_email (str, optional): Author of the package's email. If Nome, uses git's email. Defaults to None.
 
     Attributes:
-        name (str): The name of the pip package, what will get put into setuptools's name field
+        name (str): The name of the pip package, what should get put into setuptools's name field
         author (str): The author of the package
         author_email (str): The email of the author of the package
         packages (list[str]): A list of packages that this pip package contains (simply the output of setuptools.find_packages())
@@ -35,8 +36,7 @@ class SetuptoolsExtensions():
         version (str): The version of the pip package, found by parsing the package's __init__.py file
     """
 
-    def __init__(self, author=None, author_email=None):
-        name = os.path.basename(os.getcwd()).replace("-", "_")
+    def __init__(self, name, author=None, author_email=None):
         if author is None:
             author = subprocess.check_output(
                 ["git", "config", "user.name"]).decode().strip()
