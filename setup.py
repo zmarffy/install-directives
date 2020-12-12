@@ -16,11 +16,16 @@ setuptools.setup(
     license='MIT',
     description='Extra setuptools stuff',
     python_requires='>=3.6',
-    long_description=open('README.txt').read(),
-    long_description_content_type='text/plain',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     install_requires=[
         'vermin',
         'docker',
-        'zmtools>=1.7.0'
+        'zmtools>=1.8.0'
     ],
+    entry_points={
+        'console_scripts': [
+            'install-directives = zetuptools.__main__:main',
+        ],
+    },
 )

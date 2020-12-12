@@ -1,1 +1,0 @@
-This is a collection of useful functions to be used in a setup.py file used by setuptools. It can do things like build Docker images on package install. Docs to follow at some point.
