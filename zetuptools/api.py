@@ -73,9 +73,7 @@ class PipPackage():
         location (str): The location of the pip package
         requires (list[str]): Packages that this pip package requires
         required_by (list[str]): Packages on your system that require this pip package
-
-    Raises:
-        FileNotFoundError: If there is no such package on the system
+        docker_images (list[tuple[str]]): Names of the Docker images 
     """
 
     def __init__(self, name):
@@ -104,22 +102,50 @@ class PipPackage():
             setattr(self, d[0].replace("-", "_").lower(), d[1])
         self.name = self.name.replace("-", "_")
 
-    def build_docker_images(self, docker_images_package="docker_images"):
-        """Build the package's docker images
+        docker_images_package = os.path.abspath(resource_filename(self.name, "docker_images"))
+        uses_docker = os.path.isdir(docker_images_package)
+        if uses_docker:
+            docker_client = docker.from_env()
+        else:
+            docker_client = None
 
-        Args:
-            docker_images_package (str, optional): The package where the docker images are located in. Defaults to "docker_images".
+        self._docker_client = docker_client
+        docker_images = []
+        if uses_docker:
+            for sf in os.listdir(docker_images_package):
+                f = os.path.join(docker_images_package, sf)
+                if os.path.isdir(f) and "Dockerfile" in os.listdir(f):
+                    docker_images.append((sf, f))
+
+        self.docker_images = docker_images
+
+    def build_docker_images(self):
+        """Remove the package's Docker images
+
+        Raises:
+            ValueError: If the package does not use Docker images
         """
-        docker_client = docker.from_env()
-        docker_images_package = os.path.abspath(
-            resource_filename(self.name, docker_images_package))
-        for sf in os.listdir(docker_images_package):
-            f = os.path.join(docker_images_package, sf)
-            if os.path.isdir(f) and "Dockerfile" in os.listdir(f):
-                tag = f"{sf}:{self.version}"
-                LOGGER.info(f"Building Docker image {tag}")
-                docker_client.images.build(path=f, tag=tag)
-                docker_client.images.get(tag).tag(sf)
+        if not self.docker_images:
+            raise ValueError("This pip package does not use Docker")
+        for sf, f in self.docker_images:
+            tag = f"{sf}:{self.version}"
+            LOGGER.info(f"Building Docker image {tag}")
+            self._docker_client.images.build(path=f, tag=tag)
+            self._docker_client.images.get(tag).tag(sf)
+
+    def remove_docker_images(self):
+        """Remove the package's Docker images
+
+        Raises:
+            ValueError: If the package does not use Docker images
+        """
+        if not self.docker_images:
+            raise ValueError("This pip package does not use Docker")
+        for sf, _ in self.docker_images:
+            tag = f"{sf}:{self.version}"
+            LOGGER.info(f"Removing Docker image {sf}")
+            self._docker_client.images.remove(
+                self._docker_client.images.get(tag).id, force=True)
 
     def __repr__(self):
         return f"Package(name='{self.name}', version='{self.version}')"
@@ -237,7 +263,7 @@ class InstallDirectives():
             InstallException: If the install throws an exception
         """
 
-        LOGGER.info("Running install directive \"install\"")
+        LOGGER.info("Running install directive \"uninstall\"")
         if not os.path.isdir(self.base_dir):
             raise FileNotFoundError(
                 f"{self.base_dir} does not exist; was install-directives ever run for {self.package.name}?")
