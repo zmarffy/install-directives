@@ -25,4 +25,4 @@ See [`apt-repo`](https://github.com/zmarffy/apt-repo) for a real-world example o
 
 Note that this is extremely helpful for building Docker images related to the project. There is a function called `build_docker_images` that will do just that. Check out its docstring.
 
-`install-directives [package_name] uninstall` should be run *before* the uninstallation of the `pip` package. Similarly, this function has `remove_docker_images` function.
+`install-directives [package_name] uninstall` should be run *before* the uninstallation of the `pip` package. Similarly, a `remove_docker_images` function exists.
