@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 
 import docker
 from reequirements import Requirement
@@ -73,7 +74,8 @@ class PipPackage():
         location (str): The location of the pip package
         requires (list[str]): Packages that this pip package requires
         required_by (list[str]): Packages on your system that require this pip package
-        docker_images (list[tuple[str]]): Names of the Docker images 
+        docker_images (list[tuple[str]]): Names of the Docker images
+        newer_version_available (bool): If there is a newer version of this package available
     """
 
     def __init__(self, name):
@@ -90,7 +92,7 @@ class PipPackage():
 
         try:
             out = subprocess.check_output(
-                ["pip3", "show", self._name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
+                [sys.executable, "-m", "pip", "show", self._name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
         except subprocess.CalledProcessError as e:
             if e.stderr.decode().strip().startswith("WARNING: Package(s) not found:"):
                 raise FileNotFoundError(
@@ -102,7 +104,8 @@ class PipPackage():
             setattr(self, d[0].replace("-", "_").lower(), d[1])
         self.name = self.name.replace("-", "_")
 
-        docker_images_package = os.path.abspath(resource_filename(self.name, "docker_images"))
+        docker_images_package = os.path.abspath(
+            resource_filename(self.name, "docker_images"))
         uses_docker = os.path.isdir(docker_images_package)
         if uses_docker:
             docker_client = docker.from_env()
@@ -110,14 +113,34 @@ class PipPackage():
             docker_client = None
 
         self._docker_client = docker_client
-        docker_images = []
+        docker_images = {}
         if uses_docker:
             for sf in os.listdir(docker_images_package):
                 f = os.path.join(docker_images_package, sf)
                 if os.path.isdir(f) and "Dockerfile" in os.listdir(f):
-                    docker_images.append((sf, f))
+                    docker_images[sf] = f
+        # Sort
+        sorted_docker_images = []
+        for docker_image in docker_images.values():
+            with open(os.path.join(docker_image, "Dockerfile"), "r") as dfc:
+                content = dfc.readlines()[0]
+            d = re.findall(r"(?i)(?<=FROM ).+", content)
+            if d:
+                uses_image = d[0].split(":")[0]
+                if uses_image in docker_images.keys() and docker_images[uses_image] not in sorted_docker_images:
+                    sorted_docker_images.insert(0, docker_images[uses_image])
+            if docker_image not in sorted_docker_images:
+                sorted_docker_images.append(docker_image)
+        self.docker_images = sorted_docker_images
+        self._newer_version_available = None
 
-        self.docker_images = docker_images
+    @property
+    def newer_version_available(self):
+        if self._newer_version_available is None:
+            outdated_packages = [r.decode().split("==")[0] for r in subprocess.check_output(
+                [sys.executable, "-m", 'pip', "list", "--outdated"], stderr=subprocess.DEVNULL).split()]
+            self._newer_version_available = self.name in outdated_packages
+        return self._newer_version_available
 
     def build_docker_images(self):
         """Remove the package's Docker images
@@ -127,7 +150,8 @@ class PipPackage():
         """
         if not self.docker_images:
             raise ValueError("This pip package does not use Docker")
-        for sf, f in self.docker_images:
+        for f in self.docker_images:
+            sf = os.path.basename(f)
             tag = f"{sf}:{self.version}"
             LOGGER.info(f"Building Docker image {tag}")
             self._docker_client.images.build(path=f, tag=tag)
@@ -141,7 +165,8 @@ class PipPackage():
         """
         if not self.docker_images:
             raise ValueError("This pip package does not use Docker")
-        for sf, _ in self.docker_images:
+        for f in reversed(self.docker_images):
+            sf = os.path.basename(f)
             tag = f"{sf}:{self.version}"
             LOGGER.info(f"Removing Docker image {sf}")
             self._docker_client.images.remove(
