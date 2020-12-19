@@ -25,7 +25,7 @@ def _get_docker_image_name_from_string(s):
     test = s.split(":", 1)
     if len(test) != 1:
         return test[0]
-    return s
+    return s.strip()
 
 
 class SetuptoolsExtensions():
@@ -164,8 +164,23 @@ class PipPackage():
             sf = os.path.basename(f)
             tag = f"{sf}:{self.version}"
             LOGGER.info(f"Building Docker image {tag}")
-            self._docker_client.images.build(path=f, tag=tag)
+            self._docker_client.images.build(path=f, tag=tag, rm=True)
             self._docker_client.images.get(tag).tag(sf)
+
+    def remove_docker_images(self):
+        """Remove the package's Docker images
+
+        Raises:
+            ValueError: If the package does not use Docker images
+        """
+        if not self.docker_images:
+            raise ValueError("This pip package does not use Docker")
+        for f in reversed(self.docker_images):
+            sf = os.path.basename(f)
+            tag = f"{sf}:{self.version}"
+            LOGGER.info(f"Removing Docker image {sf}")
+            self._docker_client.images.remove(
+                self._docker_client.images.get(tag).id, force=True)
 
     def __repr__(self):
         return f"Package(name='{self.name}', version='{self.version}')"
