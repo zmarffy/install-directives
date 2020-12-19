@@ -18,6 +18,16 @@ REQUIREMENTS = {
 HAS_VERMIN = REQUIREMENTS["vermin"].check()
 
 
+def _get_docker_image_name_from_string(s):
+    test = s.split(" as", 1)
+    if len(test) != 1:
+        return test[0]
+    test = s.split(":", 1)
+    if len(test) != 1:
+        return test[0]
+    return s
+
+
 class SetuptoolsExtensions():
 
     """Extensions for setuptools setup.py file. Assumes you are in the source code folder
@@ -124,9 +134,9 @@ class PipPackage():
         for docker_image in docker_images.values():
             with open(os.path.join(docker_image, "Dockerfile"), "r") as dfc:
                 content = dfc.readlines()[0]
-            d = re.findall(r"(?i)(?<=FROM ).+", content)
+            d = re.findall(r"(?i)(?<=FROM ).+\n", content)
             if d:
-                uses_image = d[0].split(":")[0]
+                uses_image = _get_docker_image_name_from_string(d[0])
                 if uses_image in docker_images.keys() and docker_images[uses_image] not in sorted_docker_images:
                     sorted_docker_images.insert(0, docker_images[uses_image])
             if docker_image not in sorted_docker_images:
@@ -156,21 +166,6 @@ class PipPackage():
             LOGGER.info(f"Building Docker image {tag}")
             self._docker_client.images.build(path=f, tag=tag)
             self._docker_client.images.get(tag).tag(sf)
-
-    def remove_docker_images(self):
-        """Remove the package's Docker images
-
-        Raises:
-            ValueError: If the package does not use Docker images
-        """
-        if not self.docker_images:
-            raise ValueError("This pip package does not use Docker")
-        for f in reversed(self.docker_images):
-            sf = os.path.basename(f)
-            tag = f"{sf}:{self.version}"
-            LOGGER.info(f"Removing Docker image {sf}")
-            self._docker_client.images.remove(
-                self._docker_client.images.get(tag).id, force=True)
 
     def __repr__(self):
         return f"Package(name='{self.name}', version='{self.version}')"
