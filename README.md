@@ -6,6 +6,8 @@
 
 Read the docstrings for information on how to use `SetuptoolsExtensions`. They are there to make construction of `setup.py` files quicker, such as automatically reading the version (if it is placed in an `__init__.py` file and named `__version__`).
 
+It also can use `vermin` to determine the version required for a package. This regex needs updating though.
+
 Regarding `InstallDirectives`, the idea is to write a custom class that extends `InstallDirective`, overriding its `_install` and `_uninstall` functions. This should be placed in a Python package called "`install_directives`".
 
 These overridden functions will be automatically called upon running the command line tool as such.

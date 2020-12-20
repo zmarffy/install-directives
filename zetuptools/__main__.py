@@ -22,7 +22,7 @@ def main():
     zmtools.init_logging(level=args.log_level)
 
     _id = importlib.import_module(f"{args.package}.install_directives")
-    install_directives = _id.InstallDirectives(args.package)
+    install_directives = _id.InstallDirectives()
     if args.action == "install":
         install_directives.install()
     elif args.action == "uninstall":
