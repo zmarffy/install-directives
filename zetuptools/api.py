@@ -61,9 +61,13 @@ class SetuptoolsExtensions():
         self.packages = setuptools.find_packages()
         self.all_files = {package: ["*"] for package in self.packages}
         if HAS_VERMIN:
-            self.minimum_version_required = ">=" + \
-                re.search(r"(?<=Minimum required versions: ).+",
-                          subprocess.check_output(["vermin", "."]).decode()).group(0)
+            versions = []
+            d = re.search(r"(?<=Minimum required versions: ).+",
+                          subprocess.check_output(["vermin", "."]).decode()).group(0).split(",")
+            for v in d:
+                if "~" not in v:
+                    versions.append(f">={v.strip()}")
+            self.minimum_version_required = ",".join(versions)
         self.version = zmtools.get_package_version(self.name)
 
 
