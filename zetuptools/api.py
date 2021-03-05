@@ -7,19 +7,14 @@ import subprocess
 import sys
 
 import docker
-from reequirements import Requirement
-import setuptools
 import zmtools
 from pkg_resources import resource_filename
 
-LOGGER = logging.getLogger("InstallDirectives")
-REQUIREMENTS = {
-    "vermin": Requirement("vermin", ["vermin", "--version"], warn=True)
-}
-HAS_VERMIN = REQUIREMENTS["vermin"].check()
+LOGGER = logging.getLogger(__name__)
 
 
 def _get_docker_image_name_from_string(s):
+    # I don't remember lol
     test = s.split(" as", 1)
     if len(test) != 1:
         return test[0]
@@ -27,48 +22,6 @@ def _get_docker_image_name_from_string(s):
     if len(test) != 1:
         return test[0]
     return s.strip()
-
-
-class SetuptoolsExtensions():
-
-    """Extensions for setuptools setup.py file. Assumes you are in the source code folder
-
-    Args:
-        name (str): The name of the pip package, what should get put into setuptools's name field
-        author (str, optional): Author of the package. If None, uses git's username. Defaults to None.
-        author_email (str, optional): Author of the package's email. If Nome, uses git's email. Defaults to None.
-
-    Attributes:
-        name (str): The name of the pip package, what should get put into setuptools's name field
-        author (str): The author of the package
-        author_email (str): The email of the author of the package
-        packages (list[str]): A list of packages that this pip package contains (simply the output of setuptools.find_packages())
-        all_files (dict[str, list[str]]): A dict for use in setuptools's package_data if you want to include every single file in pakcage_data
-        minimum_version_required (str): The minimum version required for installing this pip package (determiend by vermin)
-        version (str): The version of the pip package, found by parsing the package's __init__.py file
-    """
-
-    def __init__(self, name, author=None, author_email=None):
-        if author is None:
-            author = subprocess.check_output(
-                ["git", "config", "user.name"]).decode().strip()
-        if author_email is None:
-            author_email = subprocess.check_output(
-                ["git", "config", "user.email"]).decode().strip()
-        self.name = name
-        self.author = author
-        self.author_email = author_email
-        self.packages = setuptools.find_packages()
-        self.all_files = {package: ["*"] for package in self.packages}
-        if HAS_VERMIN:
-            versions = []
-            d = re.search(r"(?<=Minimum required versions: ).+",
-                          subprocess.check_output(["vermin", "."]).decode()).group(0).split(",")
-            for v in d:
-                if "~" not in v:
-                    versions.append(f">={v.strip()}")
-            self.minimum_version_required = ",".join(versions)
-        self.version = zmtools.get_package_version(self.name)
 
 
 class PipPackage():
@@ -360,6 +313,7 @@ class InstallDirectives():
             LOGGER.info("Finished install directive \"install\"")
         except Exception as e:
             LOGGER.exception(e)
+            shutil.rmtree(self.base_dir)
             raise InstallException(e)
 
     def _uninstall(self, version):

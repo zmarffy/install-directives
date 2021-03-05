@@ -1,9 +1,16 @@
+import os
 import re
-from os.path import join as join_path
 
 import setuptools
+from reequirements import Requirement
 
-with open(join_path("zetuptools", "__init__.py"), encoding="utf8") as f:
+REQUIREMENTS = {
+    "vermin": Requirement("vermin", ["vermin", "--version"], warn=True)
+}
+for requirement in REQUIREMENTS:
+    requirement.check()
+
+with open(os.path.join("zetuptools", "__init__.py"), encoding="utf8") as f:
     version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
 setuptools.setup(

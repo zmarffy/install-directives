@@ -6,9 +6,6 @@ import sys
 
 import zmtools
 
-import zetuptools
-
-
 def main():
 
     parser = argparse.ArgumentParser()
