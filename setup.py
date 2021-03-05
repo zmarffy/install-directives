@@ -2,13 +2,6 @@ import os
 import re
 
 import setuptools
-from reequirements import Requirement
-
-REQUIREMENTS = {
-    "vermin": Requirement("vermin", ["vermin", "--version"], warn=True)
-}
-for requirement in REQUIREMENTS:
-    requirement.check()
 
 with open(os.path.join("zetuptools", "__init__.py"), encoding="utf8") as f:
     version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
@@ -26,7 +19,6 @@ setuptools.setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     install_requires=[
-        'vermin',
         'docker',
         'zmtools>=1.8.0'
     ],
