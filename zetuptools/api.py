@@ -222,12 +222,12 @@ class InstallDirectives():
             LOGGER.info(f"Removing Docker image {sf}")
             try:
                 image_id = self._docker_client.images.get(tag).id
+                self._docker_client.images.remove(image_id, force=True)
             except docker.errors.APIError as e:
                 if e.status_code == 404:
                     LOGGER.warning(f"Image {tag} could not be found; ignoring")
                 else:
                     raise e
-            self._docker_client.images.remove(image_id, force=True)
 
     def set_secret(self, secret_name, secret_value=None, error_if_exists=True):
         """Set a Docker secret
