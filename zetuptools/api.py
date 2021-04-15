@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+from typing import Optional
 
 import docker
 import zmtools
@@ -13,8 +14,8 @@ from pkg_resources import resource_filename
 LOGGER = logging.getLogger(__name__)
 
 
-def _get_docker_image_name_from_string(s):
-    # I don't remember lol
+def _get_docker_image_name_from_string(s: str) -> str:
+    # I don't remember how this works lol
     test = s.split(" as", 1)
     if len(test) != 1:
         return test[0]
@@ -45,7 +46,7 @@ class PipPackage():
         newer_version_available (bool): If there is a newer version of this package available
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self._name = name
         self.version = ""
         self.summary = ""
@@ -73,7 +74,7 @@ class PipPackage():
         self.name = self.name.replace("-", "_")
 
     @property
-    def newer_version_available(self):
+    def newer_version_available(self) -> bool:
         # Only do this if the user wants to check; it's kind of time-consuming
         if self._newer_version_available is None:
             outdated_packages = [r.decode().split("==")[0] for r in subprocess.check_output(
@@ -81,7 +82,7 @@ class PipPackage():
             self._newer_version_available = self.name in outdated_packages
         return self._newer_version_available
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Package(name='{self.name}', version='{self.version}')"
 
 
@@ -97,11 +98,11 @@ class InstallDirectivesException(Exception):
         message (str): Friendly message
     """
 
-    def __init__(self, original_exception):
+    def __init__(self, original_exception: Exception) -> None:
         self.original_exception = original_exception
         self.message = self._construct_message()
 
-    def _construct_message(self):
+    def _construct_message(self) -> str:
         """Construct the friendly message
 
         Returns:
@@ -109,7 +110,7 @@ class InstallDirectivesException(Exception):
         """
         return "InstallDirective base exception"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
 
 
@@ -117,7 +118,7 @@ class InstallException(InstallDirectivesException):
 
     """Exception thrown when install directive "install" fails"""
 
-    def _construct_message(self):
+    def _construct_message(self) -> str:
         return "Install directive \"install\" failed; you may need to manually intervene to remove leftover pieces"
 
 
@@ -125,7 +126,7 @@ class UninstallException(InstallDirectivesException):
 
     """Exception thrown when install directive "uninstall" fails"""
 
-    def _construct_message(self):
+    def _construct_message(self) -> str:
         return "Install directive \"uninstall\" failed; you may need to manually intervene to remove leftover pieces"
 
 
@@ -133,7 +134,7 @@ class InstallDirectivesNotYetRunException(Exception):
 
     """Exception to throw when install directive "install" has not yet been run"""
 
-    def __init__(self):
+    def __init__(self) -> str:
         super(InstallDirectivesNotYetRunException, self).__init__(
             "Install directive \"install\" was not yet run for this package yet; you may want to run `install-directives [package_name] install`")
 
@@ -143,7 +144,7 @@ class InstallDirectives():
     package_name = None
     data_folder = ""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Class to help run post-install/post-uninstall scripts
 
         Attributes:
@@ -192,7 +193,7 @@ class InstallDirectives():
                 sorted_docker_images.append(docker_image)
         self.docker_images = sorted_docker_images
 
-    def build_docker_images(self):
+    def build_docker_images(self) -> None:
         """Remove the package's Docker images
 
         Raises:
@@ -207,7 +208,7 @@ class InstallDirectives():
             self._docker_client.images.build(path=f, tag=tag, rm=True)
             self._docker_client.images.get(tag).tag(sf)
 
-    def remove_docker_images(self):
+    def remove_docker_images(self) -> None:
         """Remove the package's Docker images
 
         Raises:
@@ -229,7 +230,7 @@ class InstallDirectives():
                 else:
                     raise e
 
-    def set_secret(self, secret_name, secret_value=None, error_if_exists=True):
+    def set_secret(self, secret_name: str, secret_value: Optional[str] = None, error_if_exists: bool = True) -> None:
         """Set a Docker secret
 
         Args:
@@ -257,7 +258,7 @@ class InstallDirectives():
                 f"Enter value for secret {secret_name}: ")
         self._docker_client.secrets.create(name=secret_name, data=secret_value)
 
-    def remove_secret(self, secret_name, error_if_not_exists=True):
+    def remove_secret(self, secret_name: str, error_if_not_exists: bool = True) -> None:
         """Remove a Docker secret
 
         Args:
@@ -280,13 +281,13 @@ class InstallDirectives():
                     LOGGER.warning(
                         f"Secret {secret_name} does not exist; ignoring")
 
-    def _install(self, old_version, new_version):
+    def _install(self, old_version: str, new_version: str) -> None:
         """Function that should be overridden by a custom class that extends InstallDirectives"""
 
         # Override me!
         LOGGER.debug("No install directive \"install\"")
 
-    def install(self):
+    def install(self) -> None:
         """Function to run after installing a pip package
 
         Raises:
@@ -316,13 +317,13 @@ class InstallDirectives():
             shutil.rmtree(self.base_dir)
             raise InstallException(e)
 
-    def _uninstall(self, version):
+    def _uninstall(self, version: str) -> None:
         """Function that should be overridden by a custom class that extends InstallDirectives"""
 
         # Override me!
         LOGGER.debug("No install directive \"uninstall\"")
 
-    def uninstall(self):
+    def uninstall(self) -> None:
         """Function to run after uninstalling a pip package
 
         Raises:
