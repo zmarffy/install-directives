@@ -41,8 +41,8 @@ class PipPackage():
         author_email (str): The email of the author of the pip package
         license (str): The license of the pip package
         location (str): The location of the pip package
-        requires (list[str]): Packages that this pip package requires
-        required_by (list[str]): Packages on your system that require this pip package
+        requires (List[str]): Packages that this pip package requires
+        required_by (List[str]): Packages on your system that require this pip package
         newer_version_available (bool): If there is a newer version of this package available
     """
 
@@ -149,11 +149,11 @@ class InstallDirectives():
 
         Attributes:
             package_name (str): The name of the pip package
-            data_folder (Union(str, None)): The folder where data for the package should be stored in. If the empty string, defaults to ~/.[package_name]. If None, no data folder is used
+            data_folder (Optional[str]): The folder where data for the package should be stored in. If the empty string, defaults to ~/.[package_name]. If None, no data folder is used
             package (PipPackage): The pip package
             base_dir (str): The .python_installdirectives base directory
             version (str): The current version of the package
-            docker_images (list[tuple[str]]): Names of the Docker images
+            docker_images (List[Tuple[str]]): Names of the Docker images
         """
         self.package = PipPackage(self.package_name)
         self.base_dir = os.path.join(os.path.expanduser(
@@ -235,7 +235,7 @@ class InstallDirectives():
 
         Args:
             secret_name (str): Name of secret
-            secret_value (str, optional): Value of secret. If None, prompt. Defaults to None.
+            secret_value (Optional[str], optional): Value of secret. If None, prompt. Defaults to None.
             error_if_exists (bool, optional): If False, do not error if secret already exists. Defaults to True.
 
         Raises:
