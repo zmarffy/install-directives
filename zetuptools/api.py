@@ -142,6 +142,7 @@ class InstallDirectivesNotYetRunException(Exception):
 class InstallDirectives():
 
     package_name = None
+    module_name = None
     data_folder = ""
 
     def __init__(self) -> None:
@@ -149,13 +150,16 @@ class InstallDirectives():
 
         Attributes:
             package_name (str): The name of the pip package
-            data_folder (Optional[str]): The folder where data for the package should be stored in. If the empty string, defaults to ~/.[package_name]. If None, no data folder is used
+            module_name (str): The module name that contains in install-directives in it. If not provided, will default to the package name (with dashes replaced with underscores)
+            data_folder (str): The folder where data for the package should be stored in. If the empty string, defaults to f"~/.{package_name}". If None, no data folder is used
             package (PipPackage): The pip package
             base_dir (str): The .python_installdirectives base directory
             version (str): The current version of the package
             docker_images (List[Tuple[str]]): Names of the Docker images
         """
         self.package = PipPackage(self.package_name)
+        if self.module_name is None:
+            self.module_name = self.package.name
         self.base_dir = os.path.join(os.path.expanduser(
             "~"), ".python_installdirectives", self.package_name)
         self.version = self.package.version
@@ -164,7 +168,7 @@ class InstallDirectives():
                 os.sep, os.path.expanduser("~"), f".{self.package_name}")
 
         docker_images_package = os.path.abspath(
-            resource_filename(self.package.name, "docker_images"))
+            resource_filename(self.module_name, "docker_images"))
         uses_docker = os.path.isdir(docker_images_package)
         if uses_docker:
             docker_client = docker.from_env()
