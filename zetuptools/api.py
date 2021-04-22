@@ -27,7 +27,7 @@ def _get_docker_image_name_from_string(s: str) -> str:
 
 class PipPackage():
 
-    """A class that represents a pip package
+    """A class that represents a pip package. Why doesn't this use importlib.metadata? Simple. That doesn't give back as much info as this does
 
     Args:
         name (str): The name of the pip package
@@ -47,7 +47,7 @@ class PipPackage():
     """
 
     def __init__(self, name: str) -> None:
-        self._name = name
+        self.name = name
         self.version = ""
         self.summary = ""
         self.home_page = ""
@@ -61,17 +61,16 @@ class PipPackage():
 
         try:
             out = subprocess.check_output(
-                [sys.executable, "-m", "pip", "show", self._name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
+                [sys.executable, "-m", "pip", "show", self.name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
         except subprocess.CalledProcessError as e:
             if e.stderr.decode().strip().startswith("WARNING: Package(s) not found:"):
                 raise FileNotFoundError(
-                    f"No such package {self._name} on your system")
+                    f"No such package {self.name} on your system")
         for item in out:
             d = [i.strip() for i in item.split(":", 1)]
             if d[0] in ("Requires", "Required-by"):
                 d[1] = [r.strip() for r in d[1].split(",")]
             setattr(self, d[0].replace("-", "_").lower(), d[1])
-        self.name = self.name.replace("-", "_")
 
     @property
     def newer_version_available(self) -> bool:
@@ -81,6 +80,8 @@ class PipPackage():
                 [sys.executable, "-m", 'pip', "list", "--outdated"], stderr=subprocess.DEVNULL).split()]
             self._newer_version_available = self.name in outdated_packages
         return self._newer_version_available
+
+    # TODO: Make uninstall method
 
     def __repr__(self) -> str:
         return f"Package(name='{self.name}', version='{self.version}')"
