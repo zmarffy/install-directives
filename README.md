@@ -4,11 +4,13 @@
 
 It originally had some other functions I considered useful in a `setup.py` file, but these have been scrapped as of version 3.0 as they cause too many dependecy confusions and honestly do not save that much time.
 
+As of version 4.0, there are breaking changes regarding Docker images. You need to specify them, sorted, in the constructor of an `InstallDirectives` object.
+
 ## Usage
 
 The idea is to write a custom class that extends `InstallDirective`, overriding its `package_name` and `module_name` attributes and its `_install` and `_uninstall` functions. This should be placed in a Python package called `install_directives`.
 
-These overridden functions will be automatically called upon running the command line tool as such.
+These overridden functions will be called upon running the command line tool as such.
 
 ```text
 usage: install-directives [-h] [--verbose] package {install,uninstall}

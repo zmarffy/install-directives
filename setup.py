@@ -24,7 +24,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'install-directives = zetuptools.__main__:main',
+            'install-directives = zetuptools.__main__:_entry',
         ],
     },
 )

@@ -1,28 +1,17 @@
 import getpass
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
 from typing import Optional
 
 import docker
+import docker.errors
 import zmtools
 from pkg_resources import resource_filename
 
 LOGGER = logging.getLogger(__name__)
-
-
-def _get_docker_image_name_from_string(s: str) -> str:
-    # I don't remember how this works lol
-    test = s.split(" as", 1)
-    if len(test) != 1:
-        return test[0]
-    test = s.split(":", 1)
-    if len(test) != 1:
-        return test[0]
-    return s.strip()
 
 
 class PipPackage():
@@ -35,7 +24,7 @@ class PipPackage():
     Attributes:
         name (str): The name of the pip package
         version (str): The version of the pip package
-        sumamry (str): The summary of the pip package
+        summary (str): The summary of the pip package
         home_page (str): The home page of the pip package
         author (str): The author of the pip package
         author_email (str): The email of the author of the pip package
@@ -47,25 +36,25 @@ class PipPackage():
     """
 
     def __init__(self, name: str) -> None:
-        self._name = name
-        self.version = ""
-        self.summary = ""
-        self.home_page = ""
-        self.author = ""
-        self.author_email = ""
-        self.license = ""
-        self.location = ""
-        self.requires = []
-        self.required_by = []
+        self.name: str
+        self.version: str
+        self.summary: str
+        self.home_page: str
+        self.author: str
+        self.author_email: str
+        self.license: str
+        self.location: str
+        self.requires: list[str]
+        self.required_by: list[str]
         self._newer_version_available = None
 
         try:
             out = subprocess.check_output(
-                [sys.executable, "-m", "pip", "show", self._name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
+                [sys.executable, "-m", "pip", "show", name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
         except subprocess.CalledProcessError as e:
             if e.stderr.decode().strip().startswith("WARNING: Package(s) not found:"):
                 raise FileNotFoundError(
-                    f"No such package {self._name} on your system")
+                    f"No such package {name} on your system")
         for item in out:
             d = [i.strip() for i in item.split(":", 1)]
             if d[0] in ("Requires", "Required-by"):
@@ -103,11 +92,6 @@ class InstallDirectivesException(Exception):
         self.message = self._construct_message()
 
     def _construct_message(self) -> str:
-        """Construct the friendly message
-
-        Returns:
-            str: The message
-        """
         return "InstallDirective base exception"
 
     def __str__(self) -> str:
@@ -141,22 +125,33 @@ class InstallDirectivesNotYetRunException(Exception):
 
 class InstallDirectives():
 
-    package_name = None
-    module_name = None
-    data_folder = ""
-
-    def __init__(self) -> None:
+    def __init__(self, package_name: str, module_name: Optional[str] = None, data_folder: Optional[str] = "", docker_images: Optional[list[str]] = None) -> None:
         """Class to help run post-install/post-uninstall scripts
+
+        Args:
+            package_name (str): The name of the pip package
+            module_name (str, optional): The module name that contains in install-directives in it. If None, will default to the package name (with dashes replaced with underscores). Defaults to None.
+            data_folder (str, optional): The folder where data for the package should be stored in. If the empty string, defaults to f"~/.{package_name}". If None, no data folder is used. Defaults to "".
+            docker_images (list[str], optional): Names of the Docker images to build for the package, if any. Defaults to None.
 
         Attributes:
             package_name (str): The name of the pip package
-            module_name (str): The module name that contains in install-directives in it. If not provided, will default to the package name (with dashes replaced with underscores)
-            data_folder (str): The folder where data for the package should be stored in. If the empty string, defaults to f"~/.{package_name}". If None, no data folder is used
+            module_name (str): The module name that contains in install-directives in it
+            data_folder (str): The folder where data for the package should be stored in
             package (PipPackage): The pip package
             base_dir (str): The .python_installdirectives base directory
             version (str): The current version of the package
-            docker_images (List[Tuple[str]]): Names of the Docker images
+            docker_images (list[str]): Names of the Docker images
         """
+
+        if docker_images is None:
+            docker_images = []
+
+        self.package_name = package_name
+        self.module_name = module_name
+        self.data_folder = data_folder
+        self.docker_images = docker_images
+
         self.package = PipPackage(self.package_name)
         if self.module_name is None:
             self.module_name = self.package.name
@@ -176,26 +171,6 @@ class InstallDirectives():
             docker_client = None
 
         self._docker_client = docker_client
-        docker_images = {}
-        if uses_docker:
-            for sf in os.listdir(docker_images_package):
-                f = os.path.join(docker_images_package, sf)
-                if os.path.isdir(f) and "Dockerfile" in os.listdir(f):
-                    docker_images[sf] = f
-        # Sort
-        sorted_docker_images = []
-        for docker_image in docker_images.values():
-            with open(os.path.join(docker_image, "Dockerfile"), "r") as dfc:
-                content = dfc.readlines()[0]
-            # Find if one relies on another
-            d = re.findall(r"(?i)(?<=FROM ).+\n", content)
-            if d:
-                uses_image = _get_docker_image_name_from_string(d[0])
-                if uses_image in docker_images.keys() and docker_images[uses_image] not in sorted_docker_images:
-                    sorted_docker_images.insert(0, docker_images[uses_image])
-            if docker_image not in sorted_docker_images:
-                sorted_docker_images.append(docker_image)
-        self.docker_images = sorted_docker_images
 
     def build_docker_images(self) -> None:
         """Remove the package's Docker images
@@ -209,8 +184,8 @@ class InstallDirectives():
             sf = os.path.basename(f)
             tag = f"{sf}:{self.version}"
             LOGGER.info(f"Building Docker image {tag}")
-            self._docker_client.images.build(path=f, tag=tag, rm=True)
-            self._docker_client.images.get(tag).tag(sf)
+            image = self._docker_client.images.build(path=f, tag=tag, rm=True)
+            image.tag(sf)
 
     def remove_docker_images(self) -> None:
         """Remove the package's Docker images
@@ -226,13 +201,10 @@ class InstallDirectives():
             tag = f"{sf}:{self.version}"
             LOGGER.info(f"Removing Docker image {sf}")
             try:
-                image_id = self._docker_client.images.get(tag).id
+                image_id: str = self._docker_client.images.get(tag).id
                 self._docker_client.images.remove(image_id, force=True)
-            except docker.errors.APIError as e:
-                if e.status_code == 404:
-                    LOGGER.warning(f"Image {tag} could not be found; ignoring")
-                else:
-                    raise e
+            except docker.errors.NotFound as e:
+                LOGGER.warning(f"Image {tag} could not be found; ignoring")
 
     def set_secret(self, secret_name: str, secret_value: Optional[str] = None, error_if_exists: bool = True) -> None:
         """Set a Docker secret
@@ -254,9 +226,9 @@ class InstallDirectives():
                 LOGGER.warning(
                     f"Secret {secret_name} already exists; ignoring")
             return
-        except docker.errors.APIError as e:
-            if e.status_code != 404:
-                raise e
+        except docker.errors.NotFound:
+            pass
+
         if secret_value is None:
             secret_value = getpass.getpass(
                 f"Enter value for secret {secret_name}: ")
@@ -275,15 +247,12 @@ class InstallDirectives():
         """
         try:
             self._docker_client.secrets.get(secret_name).remove()
-        except docker.errors.APIError as e:
-            if e.status_code != 404:
-                raise e
+        except docker.errors.NotFound:
+            if error_if_not_exists:
+                raise ValueError(f"Secret {secret_name} does not exist")
             else:
-                if error_if_not_exists:
-                    raise ValueError(f"Secret {secret_name} does not exist")
-                else:
-                    LOGGER.warning(
-                        f"Secret {secret_name} does not exist; ignoring")
+                LOGGER.warning(
+                    f"Secret {secret_name} does not exist; ignoring")
 
     def _install(self, old_version: str, new_version: str) -> None:
         """Function that should be overridden by a custom class that extends InstallDirectives"""
