@@ -174,7 +174,8 @@ class InstallDirectives():
             f = os.path.join(self._docker_images_package, docker_image_name)
             tag = f"{docker_image_name}:{self.version}"
             LOGGER.info(f"Building Docker image {tag}")
-            image = self._docker_client.images.build(path=f, tag=tag, rm=True)[0]
+            image = self._docker_client.images.build(
+                path=f, tag=tag, rm=True)[0]
             image.tag(docker_image_name)
 
     def remove_docker_images(self) -> None:

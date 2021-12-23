@@ -5,15 +5,17 @@ import logging
 
 import zmtools
 
+
 class ACTION(Enum):
     INSTALL = "INSTALL"
     UNINSTALL = "UNINSTALL"
+
 
 def main(package: str, action: ACTION):
     _id = importlib.import_module(f"{package}.install_directives")
 
     install_directives = _id.InstallDirectives()
-    
+
     if action == ACTION.INSTALL:
         install_directives.install()
     elif action == ACTION.UNINSTALL:
@@ -25,7 +27,8 @@ def _entry() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("package", type=lambda x: x.replace("-", "_"))
-    parser.add_argument("action", choices=[action.name.lower() for action in ACTION])
+    parser.add_argument("action", choices=[
+                        action.name.lower() for action in ACTION])
     parser.add_argument("--verbose", action="store_true", help="be verbose")
     args = parser.parse_args()
 
