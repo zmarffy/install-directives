@@ -152,14 +152,13 @@ class InstallDirectives():
         if self.data_folder == "":
             self.data_folder = os.path.join(
                 os.sep, os.path.expanduser("~"), f".{self.package_name}")
-        self._docker_images_package = os.path.abspath(
-            resource_filename(self.module_name, "docker_images"))
-        uses_docker = os.path.isdir(self._docker_images_package)
-        if uses_docker:
+        if self.docker_images:
             docker_client = docker.from_env()
         else:
             docker_client = None
 
+        self._docker_images_package = os.path.abspath(
+            resource_filename(self.module_name, "docker_images"))
         self._docker_client = docker_client
 
     def build_docker_images(self) -> None:
@@ -206,9 +205,12 @@ class InstallDirectives():
             error_if_exists (bool, optional): If False, do not error if secret already exists. Defaults to True.
 
         Raises:
+            ValueError: If the package does not use Docker images
             ValueError: If the secret already exists and error_if_exists is True
             docker.errors.APIError: If there is any other Docker API error
         """
+        if not self.docker_images:
+            raise ValueError("This pip package does not use Docker")
         try:
             self._docker_client.secrets.get(secret_name)
             if error_if_exists:

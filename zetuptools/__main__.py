@@ -1,7 +1,7 @@
 import argparse
-from enum import Enum
 import importlib
 import logging
+from enum import Enum
 
 import zmtools
 
@@ -12,6 +12,12 @@ class ACTION(Enum):
 
 
 def main(package: str, action: ACTION):
+    """Main method
+
+    Args:
+        package (str): The name of the package
+        action (ACTION): The InstallDirective action to take
+    """
     _id = importlib.import_module(f"{package}.install_directives")
 
     install_directives = _id.InstallDirectives()
