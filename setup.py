@@ -14,13 +14,13 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     url='https://github.com/zmarffy/zetuptools',
     license='MIT',
-    description='Extra setuptools stuff',
+    description='Useful for doing post-install/uninstall things',
     python_requires='>=3.6',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     install_requires=[
         'docker',
-        'zmtools>=1.8.0'
+        'zmtools>=2.0.0'
     ],
     entry_points={
         'console_scripts': [

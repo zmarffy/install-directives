@@ -16,26 +16,25 @@ LOGGER = logging.getLogger(__name__)
 
 class PipPackage():
 
-    """A class that represents a pip package
-
-    Args:
-        name (str): The name of the pip package
-
-    Attributes:
-        name (str): The name of the pip package
-        version (str): The version of the pip package
-        summary (str): The summary of the pip package
-        home_page (str): The home page of the pip package
-        author (str): The author of the pip package
-        author_email (str): The email of the author of the pip package
-        license (str): The license of the pip package
-        location (str): The location of the pip package
-        requires (List[str]): Packages that this pip package requires
-        required_by (List[str]): Packages on your system that require this pip package
-        newer_version_available (bool): If there is a newer version of this package available
-    """
-
     def __init__(self, name: str) -> None:
+        """A class that represents a pip package
+
+        Args:
+            name (str): The name of the pip package
+
+        Attributes:
+            name (str): The name of the pip package
+            version (str): The version of the pip package
+            summary (str): The summary of the pip package
+            home_page (str): The home page of the pip package
+            author (str): The author of the pip package
+            author_email (str): The email of the author of the pip package
+            license (str): The license of the pip package
+            location (str): The location of the pip package
+            requires (List[str]): Packages that this pip package requires
+            required_by (List[str]): Packages on your system that require this pip package
+            newer_version_available (bool): If there is a newer version of this package available
+        """
         self.name: str
         self.version: str
         self.summary: str
@@ -76,18 +75,16 @@ class PipPackage():
 
 
 class InstallDirectivesException(Exception):
-
-    """Exception when an install directive fails
-
-    Args:
-        original_exception (Exception): The exception that caused this one
-
-    Attributes:
-        original_exception (Exception): The exception that caused this one
-        message (str): Friendly message
-    """
-
     def __init__(self, original_exception: Exception) -> None:
+        """Exception when an install directive fails
+
+        Args:
+            original_exception (Exception): The exception that caused this one
+
+        Attributes:
+            original_exception (Exception): The exception that caused this one
+            message (str): Friendly message
+        """
         self.original_exception = original_exception
         self.message = self._construct_message()
 
@@ -99,26 +96,20 @@ class InstallDirectivesException(Exception):
 
 
 class InstallException(InstallDirectivesException):
-
-    """Exception thrown when install directive "install" fails"""
-
     def _construct_message(self) -> str:
+        """Exception thrown when install directive "install" fails"""
         return "Install directive \"install\" failed; you may need to manually intervene to remove leftover pieces"
 
 
 class UninstallException(InstallDirectivesException):
-
-    """Exception thrown when install directive "uninstall" fails"""
-
     def _construct_message(self) -> str:
+        """Exception thrown when install directive "uninstall" fails"""
         return "Install directive \"uninstall\" failed; you may need to manually intervene to remove leftover pieces"
 
 
 class InstallDirectivesNotYetRunException(Exception):
-
-    """Exception to throw when install directive "install" has not yet been run"""
-
     def __init__(self) -> str:
+        """Exception to throw when install directive "install" has not yet been run"""
         super(InstallDirectivesNotYetRunException, self).__init__(
             "Install directive \"install\" was not yet run for this package yet; you may want to run `install-directives [package_name] install`")
 
@@ -161,10 +152,9 @@ class InstallDirectives():
         if self.data_folder == "":
             self.data_folder = os.path.join(
                 os.sep, os.path.expanduser("~"), f".{self.package_name}")
-
-        docker_images_package = os.path.abspath(
+        self._docker_images_package = os.path.abspath(
             resource_filename(self.module_name, "docker_images"))
-        uses_docker = os.path.isdir(docker_images_package)
+        uses_docker = os.path.isdir(self._docker_images_package)
         if uses_docker:
             docker_client = docker.from_env()
         else:
@@ -180,12 +170,12 @@ class InstallDirectives():
         """
         if not self.docker_images:
             raise ValueError("This pip package does not use Docker")
-        for f in self.docker_images:
-            sf = os.path.basename(f)
-            tag = f"{sf}:{self.version}"
+        for docker_image_name in self.docker_images:
+            f = os.path.join(self._docker_images_package, docker_image_name)
+            tag = f"{docker_image_name}:{self.version}"
             LOGGER.info(f"Building Docker image {tag}")
-            image = self._docker_client.images.build(path=f, tag=tag, rm=True)
-            image.tag(sf)
+            image = self._docker_client.images.build(path=f, tag=tag, rm=True)[0]
+            image.tag(docker_image_name)
 
     def remove_docker_images(self) -> None:
         """Remove the package's Docker images
