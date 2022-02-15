@@ -54,14 +54,20 @@ class PipPackage():
             if e.stderr.decode().strip().startswith("WARNING: Package(s) not found:"):
                 raise FileNotFoundError(
                     f"No such package {name} on your system")
-            else:
-                raise
         for item in out:
             d = [i.strip() for i in item.split(":", 1)]
             if d[0] in ("Requires", "Required-by"):
                 d[1] = [r.strip() for r in d[1].split(",")]
             setattr(self, d[0].replace("-", "_").lower(), d[1])
         self.name = self.name.replace("-", "_")
+
+        if self.version == "0.0.0":
+            # Attempt get version using git describe
+            with zmtools.working_directory(self.location):
+                try:
+                    self.version = subprocess.check_output(["git", "describe"]).decode().strip().removeprefix("v")
+                except subprocess.CalledProcessError:
+                    pass
 
     @property
     def newer_version_available(self) -> bool:
