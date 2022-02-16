@@ -8,6 +8,7 @@ from typing import Optional
 
 import docker
 import docker.errors
+import dunamai
 import zmtools
 from pkg_resources import resource_filename
 
@@ -65,7 +66,7 @@ class PipPackage():
             # Attempt get version using git describe
             with zmtools.working_directory(self.location):
                 try:
-                    self.version = subprocess.check_output(["git", "describe"]).decode().strip().removeprefix("v")
+                    self.version = str(dunamai.Version.from_any_vcs())
                 except subprocess.CalledProcessError:
                     pass
 

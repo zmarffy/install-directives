@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "zetuptools"
+version = "0.0.0"
+description = "Useful for doing post-install/uninstall things"
+authors = ["Zeke Marffy <zmarffy@me.com>"]
+readme = "README.md"
+repository = "https://github.com/zmarffy/zetuptools"
+homepage = "https://github.com/zmarffy/zetuptools"
+license = "MIT"
+
+[tool.poetry.dependencies]
+docker = "^5.0.3"
+zmtools = ">=2.0.0"
+dunamai = "^1.8.0"
+
+[tool.poetry.dev-dependencies]
+poethepoet = "^0.11.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+clean = "rm -rf .pytest_cache dist build *.egg-info ./**/__pycache__"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+metadata = true
+tagged-metadata = true
+dirty = true
+format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}+{{ distance }}.{{ commit }}{% endif %}"
+
+[tool.poetry.scripts]
+install-directives = "zetuptools.__main__:_entry"

@@ -1,4 +1,7 @@
 from .api import *
 
-__version__ = "4.0.0"
-__dev__ = True
+package_name = "zetuptools"
+
+__version__ = "0.0.0"
+if __version__ == "0.0.0":
+    __version__ = PipPackage(package_name).version
