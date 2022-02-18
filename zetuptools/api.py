@@ -35,6 +35,7 @@ class PipPackage():
             requires (List[str]): Packages that this pip package requires
             required_by (List[str]): Packages on your system that require this pip package
             newer_version_available (bool): If there is a newer version of this package available
+            editable (bool): If the package is definitively known to be installed editably. May return false negatives as it ONLY goes by version==0.0.0
         """
         self.name: str
         self.version: str
@@ -63,12 +64,16 @@ class PipPackage():
         self.name = self.name.replace("-", "_")
 
         if self.version == "0.0.0":
+            self.editable = True
+            self._newer_version_available = False
             # Attempt get version using git describe
             with zmtools.working_directory(self.location):
                 try:
                     self.version = str(dunamai.Version.from_any_vcs())
                 except subprocess.CalledProcessError:
                     pass
+        else:
+            self.editable = False
 
     @property
     def newer_version_available(self) -> bool:
