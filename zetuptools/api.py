@@ -56,6 +56,8 @@ class PipPackage():
             if "WARNING: Package(s) not found:" in e.stderr.decode().strip():
                 raise FileNotFoundError(
                     f"No such package {name} on your system")
+            else:
+                raise e
         for item in out:
             d = [i.strip() for i in item.split(":", 1)]
             if d[0] in ("Requires", "Required-by"):
