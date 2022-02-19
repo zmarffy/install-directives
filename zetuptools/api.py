@@ -35,7 +35,7 @@ class PipPackage():
             requires (List[str]): Packages that this pip package requires
             required_by (List[str]): Packages on your system that require this pip package
             newer_version_available (bool): If there is a newer version of this package available
-            editable (bool): If the package is definitively known to be installed editably. May return false negatives as it ONLY goes by version==0.0.0
+            editable (bool): If it was installed editably
         """
         self.name: str
         self.version: str
@@ -53,7 +53,7 @@ class PipPackage():
             out = subprocess.check_output(
                 [sys.executable, "-m", "pip", "show", name, "--no-color"], stderr=subprocess.PIPE).decode().strip().split("\n")
         except subprocess.CalledProcessError as e:
-            if e.stderr.decode().strip().startswith("WARNING: Package(s) not found:"):
+            if "WARNING: Package(s) not found:" in e.stderr.decode().strip():
                 raise FileNotFoundError(
                     f"No such package {name} on your system")
         for item in out:
