@@ -1,31 +1,35 @@
-# `zetuptools`
+# `install-directives`
 
-`zetuptools` contains a command line tool, `install-directives`, used to aid in post-install and post-uninstall steps for packages installed with `pip`. It also includes a class to represent packages installed with `pip`.
-
-It originally had some other functions I considered useful in a `setup.py` file, but these have been scrapped as of version 3.0 as they cause too many dependecy confusions and honestly do not save that much time.
-
-As of version 4.0, there are breaking changes regarding Docker images. You need to specify them, sorted, in the constructor of an `InstallDirectives` object.
+`install-directives` contains a command line tool, `install-directives`, used to aid in post-install and post-uninstall steps for packages installed with `pip`. It also includes a class to represent packages installed with `pip`.
 
 ## Usage
 
-The idea is to write a custom class that extends `InstallDirective`, overriding its `package_name` and `module_name` attributes and its `_install` and `_uninstall` functions. This should be placed in a Python package called `install_directives`.
+The idea is to write a custom class that inherts from `InstallDirectives`, overriding its `package_name` and `module_name` attributes and its `_install` and `_uninstall` functions. This should be placed in a package called `install_directives` in your module.
+
+For example, if your package is called "mypackage", you could set up `InstallDirectives` for it to run a script on install and another script on uninstall as such.
+
+```python
+# mypackage/install_directives/__init__.py
+
+from python_install_directives import InstallDirectives as InstallDirectives_
+
+
+class InstallDirectives(InstallDirectives_):
+    def __init__(self) -> None:
+        super().__init__("mypackage")
+        
+    def _install(old_version: str, new_version: str) -> None:
+        run_script()
+    
+    def _uninstall(version: str) -> None:
+        run_another_script()
+```
 
 These overridden functions will be called upon running the command line tool as such.
 
-```text
-usage: install-directives [-h] [--verbose] package {install,uninstall}
+```sh
+# Do a pip install of myproject first
 
-positional arguments:
-  package
-  {install,uninstall}
-
-optional arguments:
-  -h, --help           show this help message and exit
-  --verbose            be verbose
+install-directives myproject install  # Calls `run_script`
+install-directives myproject uninstall  # Calls `run_another_script`
 ```
-
-See [`apt-repo`](https://github.com/zmarffy/apt-repo) for a real-world example of how to use this with your Python package. Note the placement of `install_directives` as well as the fact that the README mentions that you should run `install-directives apt-repo install` after the `pip` package is installed.
-
-`zetuptools` should be also helpful for building Docker images related to the project. There is a function called `build_docker_images` that will do just that. It attempts to build Docker images cleverly in the order in which they are needed to be built, but this could actually be coded wrong. Be advised. I will revisit this at some point in the future.
-
-`install-directives [package_name] uninstall` should be run *before* the uninstallation of the `pip` package. Similarly, a `remove_docker_images` function exists.
