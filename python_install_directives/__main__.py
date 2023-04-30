@@ -3,6 +3,7 @@ import importlib
 import logging
 from enum import Enum
 
+
 class ACTION(Enum):
     INSTALL = "INSTALL"
     UNINSTALL = "UNINSTALL"
