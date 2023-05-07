@@ -28,8 +28,8 @@ class PipPackage:
             author_email (str): The email of the author of the pip package.
             license (str): The license of the pip package.
             location (str): The location of the pip package.
-            requires (List[str]): Packages that this pip package requires.
-            required_by (List[str]): Packages on your system that require this pip package.
+            requires (list[str]): Packages that this pip package requires.
+            required_by (list[str]): Packages on your system that require this pip package.
             newer_version_available (bool): If there is a newer version of this package available.
         """
 
@@ -47,16 +47,17 @@ class PipPackage:
 
         try:
             out = (
-                subprocess.check_output(
+                subprocess.run(
                     [sys.executable, "-m", "pip", "show", name, "--no-color"],
-                    stderr=subprocess.PIPE,
+                    check=True,
+                    capture_output=True,
+                    text=True,
                 )
-                .decode()
-                .strip()
+                .stdout.strip()
                 .split("\n")
             )
         except subprocess.CalledProcessError as e:
-            if "WARNING: Package(s) not found:" in e.stderr.decode().strip():
+            if "WARNING: Package(s) not found:" in e.stderr:
                 raise FileNotFoundError(f"No such package {name} on your system")
             else:
                 raise e
@@ -72,11 +73,12 @@ class PipPackage:
         # Only do this if the user wants to check; it's kind of time-consuming
         if self._newer_version_available is None:
             outdated_packages = [
-                r.decode().split("==")[0]
-                for r in subprocess.check_output(
+                r.split("==")[0]
+                for r in subprocess.run(
                     [sys.executable, "-m", "pip", "list", "--outdated"],
-                    stderr=subprocess.DEVNULL,
-                ).split()
+                    capture_output=True,
+                    text=True,
+                ).stdout.split()
             ]
             self._newer_version_available = self.name in outdated_packages
         return self._newer_version_available
@@ -126,7 +128,7 @@ class InstallDirectivesNotYetRunException(Exception):
         """Exception to throw when install directive "install" has not yet been run."""
 
         super(InstallDirectivesNotYetRunException, self).__init__(
-            'Install directive "install" was not yet run for this package yet; you may want to run `install-directives [package_name] install`'
+            'Install directive "install" was not run for this package yet; you may want to run `install-directives [package_name] install`'
         )
 
 
@@ -217,7 +219,7 @@ class InstallDirectives:
         """
 
         LOGGER.info('Running install directive "uninstall"')
-        if not os.path.isdir(self.base_dir):
+        if not self.base_dir.is_dir():
             raise FileNotFoundError(
                 f"{self.base_dir} does not exist; was install-directives ever run for {self.package.name}?"
             )

@@ -15,6 +15,7 @@ zmtools = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.3.1"
+pytest-lazy-fixture = "^0.6.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
