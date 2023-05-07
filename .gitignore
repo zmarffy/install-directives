@@ -8,3 +8,4 @@ build/
 __pycache__
 venv/
 poetry.lock
+test-report.xml
