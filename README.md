@@ -25,7 +25,7 @@ class InstallDirectives(InstallDirectives_):
         run_another_script()
 ```
 
-These overridden functions will be called upon running the command line tool as such.
+These overridden functions will be called upon running the command line tool as such. You can utilize the current and incoming versions of the package to perform different actions on install, as they come in as parameters. Similarly, you can utilize the current version during uninstall.
 
 ```sh
 # Do a pip install of myproject first

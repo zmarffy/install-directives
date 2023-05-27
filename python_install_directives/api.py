@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 import subprocess
 import sys
@@ -32,7 +31,6 @@ class PipPackage:
             required_by (list[str]): Packages on your system that require this pip package.
             newer_version_available (bool): If there is a newer version of this package available.
         """
-
         self.name: str
         self.version: str
         self.summary: str
@@ -98,7 +96,6 @@ class InstallDirectivesException(Exception):
             original_exception (Exception): The exception that caused this one.
             message (str): Friendly message.
         """
-
         self.original_exception = original_exception
         self.message = self._construct_message()
 
@@ -112,21 +109,18 @@ class InstallDirectivesException(Exception):
 class InstallException(InstallDirectivesException):
     def _construct_message(self) -> str:
         """Exception thrown when install directive "install" fails."""
-
         return 'Install directive "install" failed; you may need to manually intervene to remove leftover pieces'
 
 
 class UninstallException(InstallDirectivesException):
     def _construct_message(self) -> str:
         """Exception thrown when install directive "uninstall" fails."""
-
         return 'Install directive "uninstall" failed; you may need to manually intervene to remove leftover pieces'
 
 
 class InstallDirectivesNotYetRunException(Exception):
     def __init__(self) -> None:
         """Exception to throw when install directive "install" has not yet been run."""
-
         super(InstallDirectivesNotYetRunException, self).__init__(
             'Install directive "install" was not run for this package yet; you may want to run `install-directives [package_name] install`'
         )
@@ -154,7 +148,6 @@ class InstallDirectives:
             base_dir (Path): The .python_installdirectives base directory.
             version (str): The current version of the package.
         """
-
         self.package_name = package_name
         self.module_name = module_name
 
@@ -172,7 +165,6 @@ class InstallDirectives:
 
     def _install(self, old_version: str, new_version: str) -> None:
         """Function that should be overridden by a custom class that extends InstallDirectives"""
-
         # Override me!
         LOGGER.debug('No install directive "install"')
 
@@ -182,7 +174,6 @@ class InstallDirectives:
         Raises:
             InstallException: If the install throws an exception.
         """
-
         LOGGER.info('Running install directive "install"')
         try:
             self.base_dir.mkdir(parents=True, exist_ok=True)
@@ -207,7 +198,6 @@ class InstallDirectives:
 
     def _uninstall(self, version: str) -> None:
         """Function that should be overridden by a custom class that extends InstallDirectives."""
-
         # Override me!
         LOGGER.debug('No install directive "uninstall"')
 
@@ -217,7 +207,6 @@ class InstallDirectives:
         Raises:
             InstallException: If the install throws an exception.
         """
-
         LOGGER.info('Running install directive "uninstall"')
         if not self.base_dir.is_dir():
             raise FileNotFoundError(
